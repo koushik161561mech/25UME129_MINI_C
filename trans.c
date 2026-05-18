@@ -192,9 +192,9 @@ int readDouble(double *value, const char *prompt)
     return 1;
 }
 
-long recordOffset(unsigned int account)
+static inline long recordOffset(unsigned int account)
 {
-    return (long)(account - 1) * sizeof(struct clientData);
+    return (long)(account - 1) * RECORD_SIZE;
 }
 
 int readRecord(FILE *fPtr, unsigned int account, struct clientData *client)
@@ -204,7 +204,7 @@ int readRecord(FILE *fPtr, unsigned int account, struct clientData *client)
         return 0;
     }
 
-    return fread(client, sizeof(struct clientData), 1, fPtr) == 1;
+    return fread(client, RECORD_SIZE, 1, fPtr) == 1;
 }
 
 int writeRecord(FILE *fPtr, unsigned int account, const struct clientData *client)
@@ -233,7 +233,7 @@ void textFile(FILE *readPtr)
     FILE *writePtr;
     struct clientData client = {0, "", "", 0.0};
 
-    if ((writePtr = fopen("accounts.txt", "w")) == NULL)
+    if ((writePtr = fopen(OUTPUT_FILE, "w")) == NULL)
     {
         puts("File could not be opened.");
         return;
