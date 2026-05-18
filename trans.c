@@ -22,16 +22,20 @@ struct clientData
     double balance;       // account balance
 };                        // end structure clientData
 
+static struct clientData accounts[MAX_RECORDS];
+static const struct clientData blankClient = {0, "", "", 0.0};
+
 // prototypes
 unsigned int enterChoice(void);
 void printHeader(void);
 int readAccountNumber(unsigned int *account, const char *prompt);
 int readDouble(double *value, const char *prompt);
-int readRecord(FILE *fPtr, unsigned int account, struct clientData *client);
+int readRecord(unsigned int account, struct clientData *client);
 int writeRecord(FILE *fPtr, unsigned int account, const struct clientData *client);
 int ensureFileSize(FILE *fPtr);
-void textFile(FILE *readPtr);
-void listRecords(FILE *fPtr);
+void loadRecords(FILE *fPtr);
+void textFile(void);
+void listRecords(void);
 void updateRecord(FILE *fPtr);
 void newRecord(FILE *fPtr);
 void deleteRecord(FILE *fPtr);
@@ -61,6 +65,8 @@ int main(int argc, char *argv[])
         fclose(cfPtr);
         exit(EXIT_FAILURE);
     }
+
+    loadRecords(cfPtr);
 
     while ((choice = enterChoice()) != 6)
     {
@@ -197,24 +203,32 @@ static inline long recordOffset(unsigned int account)
     return (long)(account - 1) * RECORD_SIZE;
 }
 
-int readRecord(FILE *fPtr, unsigned int account, struct clientData *client)
+int readRecord(unsigned int account, struct clientData *client)
 {
-    if (fseek(fPtr, recordOffset(account), SEEK_SET) != 0)
+    if (account < 1 || account > MAX_RECORDS)
     {
         return 0;
     }
 
-    return fread(client, RECORD_SIZE, 1, fPtr) == 1;
+    *client = accounts[account - 1];
+    return 1;
 }
 
 int writeRecord(FILE *fPtr, unsigned int account, const struct clientData *client)
 {
+    if (account < 1 || account > MAX_RECORDS)
+    {
+        return 0;
+    }
+
+    accounts[account - 1] = *client;
+
     if (fseek(fPtr, recordOffset(account), SEEK_SET) != 0)
     {
         return 0;
     }
 
-    if (fwrite(client, sizeof(struct clientData), 1, fPtr) != 1)
+    if (fwrite(client, RECORD_SIZE, 1, fPtr) != 1)
     {
         return 0;
     }
@@ -223,15 +237,26 @@ int writeRecord(FILE *fPtr, unsigned int account, const struct clientData *clien
     return 1;
 }
 
+void loadRecords(FILE *fPtr)
+{
+    rewind(fPtr);
+    if (fread(accounts, RECORD_SIZE, MAX_RECORDS, fPtr) != MAX_RECORDS)
+    {
+        for (unsigned int i = 0; i < MAX_RECORDS; ++i)
+        {
+            accounts[i] = blankClient;
+        }
+    }
+}
+
 void printHeader(void)
 {
     printf("%-6s%-16s%-11s%10s\n", "Acct", "Last Name", "First Name", "Balance");
 }
 
-void textFile(FILE *readPtr)
+void textFile(void)
 {
     FILE *writePtr;
-    struct clientData client = {0, "", "", 0.0};
 
     if ((writePtr = fopen(OUTPUT_FILE, "w")) == NULL)
     {
@@ -239,16 +264,15 @@ void textFile(FILE *readPtr)
         return;
     }
 
-    rewind(readPtr);
     fprintf(writePtr, "%-6s%-16s%-11s%10s\n", "Acct", "Last Name", "First Name", "Balance");
 
-    while (fread(&client, sizeof(struct clientData), 1, readPtr) == 1)
+    for (unsigned int i = 0; i < MAX_RECORDS; ++i)
     {
-        if (client.acctNum != 0)
+        if (accounts[i].acctNum != 0)
         {
             fprintf(writePtr, "%-6u%-16s%-11s%10.2f\n",
-                    client.acctNum, client.lastName, client.firstName,
-                    client.balance);
+                    accounts[i].acctNum, accounts[i].lastName, accounts[i].firstName,
+                    accounts[i].balance);
         }
     }
 
@@ -256,20 +280,18 @@ void textFile(FILE *readPtr)
     puts("accounts.txt generated.");
 }
 
-void listRecords(FILE *fPtr)
+void listRecords(void)
 {
-    struct clientData client = {0, "", "", 0.0};
     int found = 0;
 
-    rewind(fPtr);
     printHeader();
 
-    while (fread(&client, sizeof(struct clientData), 1, fPtr) == 1)
+    for (unsigned int i = 0; i < MAX_RECORDS; ++i)
     {
-        if (client.acctNum != 0)
+        if (accounts[i].acctNum != 0)
         {
             printf("%-6u%-16s%-11s%10.2f\n",
-                   client.acctNum, client.lastName, client.firstName, client.balance);
+                   accounts[i].acctNum, accounts[i].lastName, accounts[i].firstName, accounts[i].balance);
             found = 1;
         }
     }
