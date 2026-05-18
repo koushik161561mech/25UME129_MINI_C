@@ -9,6 +9,10 @@
 #define LAST_NAME_SIZE 15
 #define FIRST_NAME_SIZE 10
 #define INPUT_BUFFER_SIZE 128
+#define DATA_FILE "credit.dat"
+#define OUTPUT_FILE "accounts.txt"
+#define RECORD_SIZE sizeof(struct clientData)
+#define RECORDS_FILE_SIZE (MAX_RECORDS * RECORD_SIZE)
 
 struct clientData
 {
@@ -25,8 +29,7 @@ int readAccountNumber(unsigned int *account, const char *prompt);
 int readDouble(double *value, const char *prompt);
 int readRecord(FILE *fPtr, unsigned int account, struct clientData *client);
 int writeRecord(FILE *fPtr, unsigned int account, const struct clientData *client);
-void initializeFile(FILE *fPtr);
-void clearInput(void);
+int ensureFileSize(FILE *fPtr);
 void textFile(FILE *readPtr);
 void listRecords(FILE *fPtr);
 void updateRecord(FILE *fPtr);
@@ -38,14 +41,25 @@ int main(int argc, char *argv[])
     FILE *cfPtr;         // credit.dat file pointer
     unsigned int choice; // user's choice
 
-    if ((cfPtr = fopen("credit.dat", "r+b")) == NULL)
+    if ((cfPtr = fopen(DATA_FILE, "r+b")) == NULL)
     {
-        if ((cfPtr = fopen("credit.dat", "w+b")) == NULL)
+        if ((cfPtr = fopen(DATA_FILE, "w+b")) == NULL)
         {
             fprintf(stderr, "%s: File could not be opened.\n", argv[0]);
             exit(EXIT_FAILURE);
         }
-        initializeFile(cfPtr);
+    }
+
+    if (setvbuf(cfPtr, NULL, _IOFBF, 8192) != 0)
+    {
+        fputs("Warning: failed to set file buffer.\n", stderr);
+    }
+
+    if (!ensureFileSize(cfPtr))
+    {
+        fputs("Could not initialize or extend data file.\n", stderr);
+        fclose(cfPtr);
+        exit(EXIT_FAILURE);
     }
 
     while ((choice = enterChoice()) != 6)
@@ -77,27 +91,53 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void initializeFile(FILE *fPtr)
+int ensureFileSize(FILE *fPtr)
 {
     struct clientData blankClient = {0, "", "", 0.0};
+    long currentSize;
 
-    rewind(fPtr);
-    for (unsigned int i = 0; i < MAX_RECORDS; ++i)
+    if (fseek(fPtr, 0, SEEK_END) != 0)
     {
-        if (fwrite(&blankClient, sizeof(struct clientData), 1, fPtr) != 1)
-        {
-            fputs("Error initializing file.\n", stderr);
-            exit(EXIT_FAILURE);
-        }
+        return 0;
     }
-    fflush(fPtr);
-}
 
-void clearInput(void)
-{
-    int ch;
-    while ((ch = getchar()) != '\n' && ch != EOF)
-        ;
+    currentSize = ftell(fPtr);
+    if (currentSize < 0)
+    {
+        return 0;
+    }
+
+    if (currentSize == RECORDS_FILE_SIZE)
+    {
+        return 1;
+    }
+
+    if (currentSize > RECORDS_FILE_SIZE)
+    {
+        return 1; // preserve larger files without truncating
+    }
+
+    if ((currentSize % RECORD_SIZE) != 0)
+    {
+        return 0;
+    }
+
+    if (fseek(fPtr, currentSize, SEEK_SET) != 0)
+    {
+        return 0;
+    }
+
+    while (currentSize < RECORDS_FILE_SIZE)
+    {
+        if (fwrite(&blankClient, RECORD_SIZE, 1, fPtr) != 1)
+        {
+            return 0;
+        }
+        currentSize += RECORD_SIZE;
+    }
+
+    fflush(fPtr);
+    return 1;
 }
 
 int readAccountNumber(unsigned int *account, const char *prompt)
