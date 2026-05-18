@@ -37,6 +37,7 @@ int readRecord(unsigned int account, struct clientData *client);
 int writeRecord(FILE *fPtr, unsigned int account, const struct clientData *client);
 int ensureFileSize(FILE *fPtr);
 void loadRecords(FILE *fPtr);
+void saveRecords(FILE *fPtr);
 void textFile(void);
 void listRecords(void);
 void searchByLastName(void);
@@ -99,6 +100,11 @@ int main(int argc, char *argv[])
             puts("Incorrect choice");
             break;
         }
+    }
+
+    if (dataDirty)
+    {
+        saveRecords(cfPtr);
     }
 
     fclose(cfPtr);
