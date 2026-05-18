@@ -37,9 +37,11 @@ int ensureFileSize(FILE *fPtr);
 void loadRecords(FILE *fPtr);
 void textFile(void);
 void listRecords(void);
+void searchByLastName(void);
 void updateRecord(FILE *fPtr);
 void newRecord(FILE *fPtr);
 void deleteRecord(FILE *fPtr);
+int compareIgnoreCase(const char *first, const char *second);
 
 int main(int argc, char *argv[])
 {
@@ -69,7 +71,7 @@ int main(int argc, char *argv[])
 
     loadRecords(cfPtr);
 
-    while ((choice = enterChoice()) != 6)
+    while ((choice = enterChoice()) != 7)
     {
         switch (choice)
         {
@@ -87,6 +89,9 @@ int main(int argc, char *argv[])
             break;
         case 5:
             listRecords();
+            break;
+        case 6:
+            searchByLastName();
             break;
         default:
             puts("Incorrect choice");
@@ -303,7 +308,63 @@ void listRecords(void)
     }
 }
 
-void updateRecord(FILE *fPtr)
+int compareIgnoreCase(const char *first, const char *second)
+{
+    while (*first && *second)
+    {
+        unsigned char a = (unsigned char)tolower(*first);
+        unsigned char b = (unsigned char)tolower(*second);
+        if (a != b)
+        {
+            return a - b;
+        }
+        first++;
+        second++;
+    }
+    return (unsigned char)tolower(*first) - (unsigned char)tolower(*second);
+}
+
+void searchByLastName(void)
+{
+    char query[LAST_NAME_SIZE + 1];
+    int found = 0;
+
+    printf("Enter last name to search: ");
+    if (fgets(query, sizeof(query), stdin) == NULL)
+    {
+        puts("Input error.");
+        return;
+    }
+
+    size_t len = strlen(query);
+    if (len > 0 && query[len - 1] == '\n')
+    {
+        query[len - 1] = '\0';
+    }
+
+    if (query[0] == '\0')
+    {
+        puts("Search term cannot be empty.");
+        return;
+    }
+
+    printHeader();
+
+    for (unsigned int i = 0; i < MAX_RECORDS; ++i)
+    {
+        if (accounts[i].acctNum != 0 && compareIgnoreCase(accounts[i].lastName, query) == 0)
+        {
+            printf("%-6u%-16s%-11s%10.2f\n",
+                   accounts[i].acctNum, accounts[i].lastName, accounts[i].firstName, accounts[i].balance);
+            found = 1;
+        }
+    }
+
+    if (!found)
+    {
+        printf("No accounts found for last name '%s'.\n", query);
+    }
+}
 {
     unsigned int account;
     double transaction;
@@ -437,7 +498,8 @@ unsigned int enterChoice(void)
            "3 - add a new account\n"
            "4 - delete an account\n"
            "5 - list all accounts\n"
-           "6 - end program\n? ");
+           "6 - search accounts by last name\n"
+           "7 - end program\n? ");
 
     if (fgets(buffer, sizeof(buffer), stdin) == NULL)
     {
