@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #define MAX_RECORDS 100
 #define LAST_NAME_SIZE 15
@@ -283,7 +284,7 @@ void textFile(void)
     }
 
     fclose(writePtr);
-    puts("accounts.txt generated.");
+    printf("%s generated.\n", OUTPUT_FILE);
 }
 
 void listRecords(void)
