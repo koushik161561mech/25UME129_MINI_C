@@ -111,6 +111,16 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+void saveRecords(FILE *fPtr)
+{
+    rewind(fPtr);
+    if (fwrite(accounts, RECORD_SIZE, MAX_RECORDS, fPtr) != MAX_RECORDS)
+    {
+        fputs("Error saving records.\n", stderr);
+    }
+    fflush(fPtr);
+}
+
 int ensureFileSize(FILE *fPtr)
 {
     struct clientData blankClient = {0, "", "", 0.0};
