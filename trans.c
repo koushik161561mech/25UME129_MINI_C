@@ -1,3 +1,4 @@
+
 // Bank-account program reads a random-access file sequentially,
 // updates data already written to the file, creates new data to
 // be placed in the file, and deletes data previously in the file.
@@ -73,7 +74,7 @@ int main(int argc, char *argv[])
         switch (choice)
         {
         case 1:
-            textFile(cfPtr);
+            textFile();
             break;
         case 2:
             updateRecord(cfPtr);
@@ -85,7 +86,7 @@ int main(int argc, char *argv[])
             deleteRecord(cfPtr);
             break;
         case 5:
-            listRecords(cfPtr);
+            listRecords();
             break;
         default:
             puts("Incorrect choice");
@@ -313,7 +314,7 @@ void updateRecord(FILE *fPtr)
         return;
     }
 
-    if (!readRecord(fPtr, account, &client))
+    if (!readRecord(account, &client))
     {
         puts("Error reading the account record.");
         return;
@@ -356,7 +357,7 @@ void deleteRecord(FILE *fPtr)
         return;
     }
 
-    if (!readRecord(fPtr, accountNum, &client))
+    if (!readRecord(accountNum, &client))
     {
         puts("Error reading the account record.");
         return;
@@ -388,7 +389,7 @@ void newRecord(FILE *fPtr)
         return;
     }
 
-    if (!readRecord(fPtr, accountNum, &client))
+    if (!readRecord(accountNum, &client))
     {
         puts("Error reading the account record.");
         return;
