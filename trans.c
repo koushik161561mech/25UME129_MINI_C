@@ -26,6 +26,7 @@ struct clientData
 
 static struct clientData accounts[MAX_RECORDS];
 static const struct clientData blankClient = {0, "", "", 0.0};
+static int dataDirty = 0;
 
 // prototypes
 unsigned int enterChoice(void);
